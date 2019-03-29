@@ -48,7 +48,7 @@ Each operation is clearly labeled with a comment and a print function.
     
     ```
 
-7.  Note that in order to run this sample on ADFS environments, use `tenantId` as the value of AZS_TENANT_ID environment variable.
+7.  Note that in order to run this sample on ADFS environments, use `adfs` as the value of AZS_TENANT_ID environment variable.
 
 
 8. Run the sample.

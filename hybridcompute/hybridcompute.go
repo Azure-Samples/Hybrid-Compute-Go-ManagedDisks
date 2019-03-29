@@ -97,7 +97,7 @@ func CreateVM(ctx context.Context, vmName, diskName, nicName, username, password
 			compute.DataDisk{
 				CreateOption: compute.DiskCreateOptionTypesAttach,
 				ManagedDisk: &compute.ManagedDiskParameters{
-					StorageAccountType: "StandardLRS",
+					StorageAccountType: compute.StandardLRS,
 					ID:                 disk.ID,
 				},
 				Caching:    compute.CachingTypesReadOnly,
