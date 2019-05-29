@@ -15,7 +15,7 @@ import (
 	"../hybridnetwork"
 	"../iam"
 
-	"github.com/Azure/azure-sdk-for-go/profiles/2018-03-01/compute/mgmt/compute"
+	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/compute/mgmt/compute"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
 )
@@ -78,7 +78,7 @@ func CreateVM(ctx context.Context, vmName, diskName, nicName, username, password
 			DiskSizeGB: to.Int32Ptr(1),
 		},
 	})
-	err = diskFuture.WaitForCompletion(ctx, diskClient.Client)
+	err = diskFuture.WaitForCompletionRef(ctx, diskClient.Client)
 	if err != nil {
 		return vm, err
 	}
@@ -154,7 +154,7 @@ func CreateVM(ctx context.Context, vmName, diskName, nicName, username, password
 	if err != nil {
 		return vm, fmt.Errorf(fmt.Sprintf(errorPrefix, err))
 	}
-	err = future.WaitForCompletion(cntx, vmClient.Client)
+	err = future.WaitForCompletionRef(cntx, vmClient.Client)
 	if err != nil {
 		return vm, fmt.Errorf(fmt.Sprintf(errorPrefix, err))
 	}
