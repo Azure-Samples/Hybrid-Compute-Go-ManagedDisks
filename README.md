@@ -1,9 +1,9 @@
 ---
 topic: sample
 languages:
--go
+ -go
 products:
--azure-sdks
+ -azure-sdks
 services: Azure-Stack
 platforms: GO
 author: seyadava
