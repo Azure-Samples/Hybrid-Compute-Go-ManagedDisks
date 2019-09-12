@@ -1,12 +1,11 @@
 ---
-topic: sample
+page_type: sample
 languages:
- - go
+- go
 products:
- - azure-sdks
-services: Azure-Stack
-platforms: GO
-author: seyadava
+- azure
+description: "These samples demonstrate how to create Virtual Machines with managed disks using the Azure SDK for Go on Azure Stack."
+urlFragment: Hybrid-Compute-Go-ManagedDisks
 ---
 
 # Hybrid-Compute-GO-ManagedDisks
