@@ -27,40 +27,55 @@ Each operation is clearly labeled with a comment and a print function.
 
 
 ## Running this sample
-1.  If you don't already have it, [install Golang](https://golang.org/doc/install).
 
-2.  Install Go SDK and its dependencies, [install Go SDK](https://github.com/azure/azure-sdk-for-go) 
+1. If you don't already have it, [install Golang](https://golang.org/doc/install).
 
-3.  Clone the repository.
+1. Install Go SDK and its dependencies, [install Go SDK](https://github.com/azure/azure-sdk-for-go) 
 
+1. Clone the sample project repository to your `GOPATH` location. You can add a new path to `GOPATH` location by adding an existing folder path to the `GOPATH` user environment variable. 
+    - Create a `src` folder inside this new `GOPATH` folder and `cd` into the `src` folder.
+    ```
+    mkdir src
+    cd src
+    ```
+    - Clone the sample project repository into your `src` folder.
     ```
     git clone https://github.com/Azure-Samples/Hybrid-Compute-Go-ManagedDisks.git
     ```
 
-4.  Create a [service principal using a certificate](https://docs.microsoft.com/en-us/azure/azure-stack/azure-stack-create-service-principals#create-a-service-principal-using-a-certificate) to work against AzureStack. Make sure your service principal has [contributor/owner role](https://docs.microsoft.com/en-us/azure/azure-stack/azure-stack-create-service-principals#assign-role-to-service-principal) on your subscription.
-
-6.  Fill in and export these environment variables into your current shell. 
-
+1. Open a Powershell or Bash shell in `$GOPATH/src/Hybrid-Compute-Go-ManagedDisks` and enter the following command:
     ```
-    export AZS_ARM_ENDPOINT={your AzureStack Resource Manager Endpoint}
-    export AZS_TENANT_ID={your tenant id}
-    export AZS_CLIENT_ID={your client id}
-    export AZS_CLIENT_SECRET={your client secret}
-    export AZS_CERT_PATH={your service principal certificate path}
-    export AZS_SUBSCRIPTION_ID={your subscription id}
-    export AZS_LOCATION={your resource location}
-    
+    go mod init Hybrid-Compute-Go-ManagedDisks
     ```
 
-7.  Note that in order to run this sample on ADFS environments, use `adfs` as the value of AZS_TENANT_ID environment variable.
+1. Run the following to validate the go mod file with the required source code modules.
+    ```
+    go mod tidy
+    ```
 
+1. Create a [service principal using a certificate](https://docs.microsoft.com/en-us/azure/azure-stack/azure-stack-create-service-principals#create-a-service-principal-using-a-certificate) to work against AzureStack. Make sure your service principal has [contributor/owner role](https://docs.microsoft.com/en-us/azure/azure-stack/azure-stack-create-service-principals#assign-role-to-service-principal) on your subscription.
 
-8. Run the sample.
+1. Fill in and export these environment variables into your current shell. 
+    ```
+    export AZURE_ARM_ENDPOINT={your AzureStack Resource Manager Endpoint}
+    export AZURE_TENANT_ID={your tenant id for AAD or "adfs" for ADFS}
+    export AZURE_SP_CERT_ID={your service principal certificate client id}
+    export AZURE_SP_CERT_PASS={password for your service principal certificate .pfx file}
+    export AZURE_SP_CERT_PATH={path to your password protected service principal certificate .pfx file}
+    export AZURE_SUBSCRIPTION_ID={your subscription id}
+    export AZURE_LOCATION={your resource location}
+    ```
 
+1. Azure will force the use of SSH over password authentication if both were configured. The sample code also enforces SSH key pair authentication over password authentication. The password authentication will be used if the SSH key pair path does not exist. To run the sample, do one of either:
+    - Create an SSH key at `%HOMEPATH%/.ssh/id_rsa.pub` for SSH key pair authentication.
     ```
     go run app.go
     ```
-    
+    - Pass a string parameter as the VM admin password for password authentication.
+    ```
+    go run app.go <PASSWORD>
+    ```
+
 ## More information
 
 Here are some helpful links:

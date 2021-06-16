@@ -3,12 +3,11 @@ package hybridstorage
 import (
 	"context"
 	"fmt"
-
 	"log"
 
-	"../iam"
+	"Hybrid-Compute-Go-ManagedDisks/iam"
 
-	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/storage/mgmt/storage"
+	"github.com/Azure/azure-sdk-for-go/profiles/2020-09-01/storage/mgmt/storage"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
 )
@@ -17,8 +16,8 @@ const (
 	errorPrefix = "Cannot create storage account, reason: %v"
 )
 
-func getStorageAccountsClient(certPath, tenantID, clientID, clientSecret, armEndpoint, subscriptionID string) storage.AccountsClient {
-	token, err := iam.GetResourceManagementToken(tenantID, clientID, clientSecret, armEndpoint, certPath)
+func getStorageAccountsClient(certPath, tenantID, clientID, certPass, armEndpoint, subscriptionID string) storage.AccountsClient {
+	token, err := iam.GetResourceManagementToken(tenantID, clientID, certPass, armEndpoint, certPath)
 	if err != nil {
 		log.Fatal(fmt.Sprintf(errorPrefix, fmt.Sprintf("Cannot generate token. Error details: %v.", err)))
 	}
@@ -28,8 +27,8 @@ func getStorageAccountsClient(certPath, tenantID, clientID, clientSecret, armEnd
 }
 
 // CreateStorageAccount creates a new storage account.
-func CreateStorageAccount(cntx context.Context, accountName, rgName, location, certPath, tenantID, clientID, clientSecret, armEndpoint, subscriptionID string) (s storage.Account, err error) {
-	storageAccountsClient := getStorageAccountsClient(certPath, tenantID, clientID, clientSecret, armEndpoint, subscriptionID)
+func CreateStorageAccount(cntx context.Context, accountName, rgName, location, certPath, tenantID, clientID, certPass, armEndpoint, subscriptionID string) (s storage.Account, err error) {
+	storageAccountsClient := getStorageAccountsClient(certPath, tenantID, clientID, certPass, armEndpoint, subscriptionID)
 	result, err := storageAccountsClient.CheckNameAvailability(
 		cntx,
 		storage.AccountCheckNameAvailabilityParameters{
@@ -49,7 +48,7 @@ func CreateStorageAccount(cntx context.Context, accountName, rgName, location, c
 		storage.AccountCreateParameters{
 			Sku: &storage.Sku{
 				Name: storage.StandardLRS},
-			Location: to.StringPtr(location),
+			Location:                          to.StringPtr(location),
 			AccountPropertiesCreateParameters: &storage.AccountPropertiesCreateParameters{},
 		})
 	if err != nil {

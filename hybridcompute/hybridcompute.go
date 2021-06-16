@@ -12,10 +12,10 @@ import (
 	"log"
 	"os"
 
-	"../hybridnetwork"
-	"../iam"
+	"Hybrid-Compute-Go-ManagedDisks/hybridnetwork"
+	"Hybrid-Compute-Go-ManagedDisks/iam"
 
-	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/compute/mgmt/compute"
+	"github.com/Azure/azure-sdk-for-go/profiles/2020-09-01/compute/mgmt/compute"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
 )
@@ -30,8 +30,8 @@ const (
 // fakepubkey is used if a key isn't available at the specified path in CreateVM(...)
 var fakepubkey = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC7laRyN4B3YZmVrDEZLZoIuUA72pQ0DpGuZBZWykCofIfCPrFZAJgFvonKGgKJl6FGKIunkZL9Us/mV4ZPkZhBlE7uX83AAf5i9Q8FmKpotzmaxN10/1mcnEE7pFvLoSkwqrQSkrrgSm8zaJ3g91giXSbtqvSIj/vk2f05stYmLfhAwNo3Oh27ugCakCoVeuCrZkvHMaJgcYrIGCuFo6q0Pfk9rsZyriIqEa9AtiUOtViInVYdby7y71wcbl0AbbCZsTSqnSoVxm2tRkOsXV6+8X4SnwcmZbao3H+zfO1GBhQOLxJ4NQbzAa8IJh810rYARNLptgmsd4cYXVOSosTX azureuser"
 
-func getVMClient(certPath, tenantID, clientID, clientSecret, armEndpoint, subscriptionID string) compute.VirtualMachinesClient {
-	token, err := iam.GetResourceManagementToken(tenantID, clientID, clientSecret, armEndpoint, certPath)
+func getVMClient(certPath, tenantID, clientID, certPass, armEndpoint, subscriptionID string) compute.VirtualMachinesClient {
+	token, err := iam.GetResourceManagementToken(tenantID, clientID, certPass, armEndpoint, certPath)
 	if err != nil {
 		log.Fatal(fmt.Sprintf(errorPrefix, fmt.Sprintf("Cannot generate token. Error details: %v.", err)))
 	}
@@ -40,8 +40,8 @@ func getVMClient(certPath, tenantID, clientID, clientSecret, armEndpoint, subscr
 	return vmClient
 }
 
-func getDiskClient(certPath, tenantID, clientID, clientSecret, armEndpoint, subscriptionID string) compute.DisksClient {
-	token, err := iam.GetResourceManagementToken(tenantID, clientID, clientSecret, armEndpoint, certPath)
+func getDiskClient(certPath, tenantID, clientID, certPass, armEndpoint, subscriptionID string) compute.DisksClient {
+	token, err := iam.GetResourceManagementToken(tenantID, clientID, certPass, armEndpoint, certPath)
 	if err != nil {
 		log.Fatal(fmt.Sprintf(errorPrefix, fmt.Sprintf("Cannot generate token. Error details: %v.", err)))
 	}
@@ -52,9 +52,9 @@ func getDiskClient(certPath, tenantID, clientID, clientSecret, armEndpoint, subs
 
 // CreateVM creates a new virtual machine with the specified name using the specified network interface and storage account.
 // Username, password, and sshPublicKeyPath determine logon credentials.
-func CreateVM(ctx context.Context, vmName, diskName, nicName, username, password, storageAccountName, sshPublicKeyPath, rgName, location, tenantID, clientID, clientSecret, certPath, armEndpoint, subscriptionID string) (vm compute.VirtualMachine, err error) {
+func CreateVM(ctx context.Context, vmName, diskName, nicName, username, password, storageAccountName, sshPublicKeyPath, rgName, location, tenantID, clientID, certPass, certPath, armEndpoint, subscriptionID string) (vm compute.VirtualMachine, err error) {
 	cntx := context.Background()
-	nic, _ := hybridnetwork.GetNic(cntx, nicName, certPath, tenantID, clientID, clientSecret, armEndpoint, subscriptionID, rgName)
+	nic, _ := hybridnetwork.GetNic(cntx, nicName, certPath, tenantID, clientID, certPass, armEndpoint, subscriptionID, rgName)
 
 	var sshKeyData string
 	_, err = os.Stat(sshPublicKeyPath)
@@ -64,11 +64,10 @@ func CreateVM(ctx context.Context, vmName, diskName, nicName, username, password
 			log.Fatalf(fmt.Sprintf(errorPrefix, fmt.Sprintf("failed to read SSH key data: %v", err)))
 		}
 		sshKeyData = string(sshBytes)
-	} else {
-		sshKeyData = fakepubkey
 	}
-	vmClient := getVMClient(certPath, tenantID, clientID, clientSecret, armEndpoint, subscriptionID)
-	diskClient := getDiskClient(certPath, tenantID, clientID, clientSecret, armEndpoint, subscriptionID)
+
+	vmClient := getVMClient(certPath, tenantID, clientID, certPass, armEndpoint, subscriptionID)
+	diskClient := getDiskClient(certPath, tenantID, clientID, certPass, armEndpoint, subscriptionID)
 	diskFuture, _ := diskClient.CreateOrUpdate(ctx, rgName, diskName, compute.Disk{
 		Location: to.StringPtr(location),
 		DiskProperties: &compute.DiskProperties{
@@ -94,10 +93,10 @@ func CreateVM(ctx context.Context, vmName, diskName, nicName, username, password
 			Version:   to.StringPtr("latest"),
 		},
 		DataDisks: &[]compute.DataDisk{
-			compute.DataDisk{
+			{
 				CreateOption: compute.DiskCreateOptionTypesAttach,
 				ManagedDisk: &compute.ManagedDiskParameters{
-					StorageAccountType: compute.StandardLRS,
+					StorageAccountType: compute.StorageAccountTypesStandardLRS,
 					ID:                 disk.ID,
 				},
 				Caching:    compute.CachingTypesReadOnly,
@@ -111,20 +110,32 @@ func CreateVM(ctx context.Context, vmName, diskName, nicName, username, password
 			CreateOption: compute.DiskCreateOptionTypesFromImage,
 		},
 	}
-	osProfile := &compute.OSProfile{
-		ComputerName:  to.StringPtr(vmName),
-		AdminUsername: to.StringPtr(username),
-		AdminPassword: to.StringPtr(password),
-		LinuxConfiguration: &compute.LinuxConfiguration{
-			SSH: &compute.SSHConfiguration{
-				PublicKeys: &[]compute.SSHPublicKey{
-					{
-						Path:    to.StringPtr(fmt.Sprintf("/home/%s/.ssh/authorized_keys", username)),
-						KeyData: to.StringPtr(sshKeyData),
+	var osProfile *compute.OSProfile
+	if len(username) != 0 && len(sshKeyData) != 0 {
+		osProfile = &compute.OSProfile{
+			ComputerName:  to.StringPtr(vmName),
+			AdminUsername: to.StringPtr(username),
+			LinuxConfiguration: &compute.LinuxConfiguration{
+				SSH: &compute.SSHConfiguration{
+					PublicKeys: &[]compute.SSHPublicKey{
+						{
+							Path:    to.StringPtr(fmt.Sprintf("/home/%s/.ssh/authorized_keys", username)),
+							KeyData: to.StringPtr(sshKeyData),
+						},
 					},
 				},
 			},
-		},
+		}
+	} else if len(username) != 0 && len(password) != 0 {
+		osProfile = &compute.OSProfile{
+			ComputerName:  to.StringPtr(vmName),
+			AdminUsername: to.StringPtr(username),
+			AdminPassword: to.StringPtr(password),
+		}
+	} else if len(sshKeyData) == 0 && len(password) == 0 {
+		log.Fatalf(fmt.Sprintf(errorPrefix, fmt.Sprintf("Both VM admin password and SSH key pair path %s are invalid. At least one required to create VM. Usage for password authentication: go run app.go <PASSWORD>", sshPublicKeyPath)))
+	} else {
+		log.Fatalf(fmt.Sprintf(errorPrefix, fmt.Sprintf("VM admin username is an empty string.")))
 	}
 	networkProfile := &compute.NetworkProfile{
 		NetworkInterfaces: &[]compute.NetworkInterfaceReference{
